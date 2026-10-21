@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIA - Início</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            color: #222;
+        }
+
+        .container {
+            max-width: 820px;
+            margin: 60px auto;
+            padding: 0 24px;
+        }
+
+        .painel {
+            background: white;
+            border-radius: 10px;
+            padding: 34px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.06);
+        }
+
+        h1 {
+            margin: 0 0 8px;
+        }
+
+        .descricao {
+            margin: 0 0 30px;
+            color: #666;
+        }
+
+        .opcoes {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .opcao {
+            display: block;
+            text-decoration: none;
+            color: #222;
+            border: 1px solid #d8dde2;
+            border-radius: 8px;
+            padding: 22px;
+            min-height: 150px;
+            transition: transform .15s, box-shadow .15s, border-color .15s;
+            background: #fff;
+        }
+
+        .opcao:hover {
+            transform: translateY(-2px);
+            border-color: #999;
+            box-shadow: 0 4px 14px rgba(0,0,0,.08);
+        }
+
+        .icone {
+            font-size: 28px;
+            display: block;
+            margin-bottom: 14px;
+        }
+
+        .titulo {
+            display: block;
+            font-weight: bold;
+            font-size: 17px;
+            margin-bottom: 8px;
+        }
+
+        .texto {
+            display: block;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 760px) {
+            .container {
+                margin: 20px auto;
+                padding: 0 14px;
+            }
+
+            .painel {
+                padding: 24px;
+            }
+
+            .opcoes {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="painel">
+        <h1>RIA - Registro de Imunização</h1>
+        <p class="descricao">
+            Selecione a operação que deseja realizar.
+        </p>
+
+        <div class="opcoes">
+            <a class="opcao" href="/registros-ria">
+                <span class="icone">💉</span>
+                <span class="titulo">
+                    Registros de Imunobiológicos
+                </span>
+                <span class="texto">
+                    Consulte os registros de imunobiológicos e acesse o cadastro de novos registros.
+                </span>
+            </a>
+
+            <a class="opcao" href="/profissionais">
+                <span class="icone">🩺</span>
+                <span class="titulo">
+                    Profissionais de Saúde
+                </span>
+                <span class="texto">
+                    Consulte os profissionais cadastrados e acesse o cadastro de novos profissionais.
+                </span>
+            </a>
+
+            <a class="opcao" href="/pacientes">
+                <span class="icone">👤</span>
+                <span class="titulo">
+                    Pacientes
+                </span>
+                <span class="texto">
+                    Consulte os pacientes cadastrados e acesse o cadastro de novos pacientes.
+                </span>
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

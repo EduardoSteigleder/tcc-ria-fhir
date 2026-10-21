@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de paciente</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; color: #222; }
+        .topo { max-width: 700px; margin: 24px auto 0; padding: 0 18px; }
+        .topo a { display: inline-block; text-decoration: none; color: #222; background: white; border: 1px solid #d0d5da; border-radius: 6px; padding: 9px 12px; font-size: 14px; font-weight: bold; }
+        .topo a:hover { background: #eef1f4; }
+        .container { max-width: 700px; margin: 14px auto 40px; background: white; padding: 32px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+        h1 { margin-top: 0; margin-bottom: 8px; }
+        .descricao { color: #555; margin-top: 0; margin-bottom: 28px; line-height: 1.45; }
+        .campo { margin-bottom: 21px; }
+        label { display: block; font-weight: bold; margin-bottom: 7px; }
+        input, select { width: 100%; padding: 11px; border: 1px solid #bbb; border-radius: 5px; font-size: 16px; background: white; }
+        input:focus, select:focus { outline: none; border-color: #555; }
+        input.valido, select.valido { border-color: #198754; background: #f5fff7; }
+        input.invalido, select.invalido { border-color: #dc3545; background: #fff8f8; }
+        .ajuda { display: block; color: #777; font-size: 13px; margin-top: 6px; line-height: 1.4; }
+        .mensagem-campo { display: none; font-size: 13px; margin-top: 6px; }
+        .mensagem-campo.erro { display: block; color: #dc3545; }
+        .mensagem-campo.sucesso { display: block; color: #198754; }
+        .mensagem-geral { padding: 13px; border-radius: 5px; margin-bottom: 22px; line-height: 1.5; }
+        .mensagem-geral.sucesso { background: #e8f5e9; border: 1px solid #a5d6a7; }
+        .mensagem-geral.erro { background: #ffebee; border: 1px solid #ef9a9a; color: #a61b29; }
+        .linha { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        button { width: 100%; border: 0; border-radius: 5px; padding: 14px; font-size: 16px; font-weight: bold; cursor: pointer; background: #222; color: white; }
+        button:hover:not(:disabled) { background: #000; }
+        button:disabled { cursor: not-allowed; opacity: .35; }
+        @media (max-width:700px) {
+            .topo { margin-top: 14px; }
+            .container { margin: 14px 0 0; min-height: calc(100vh - 60px); border-radius: 0; padding: 24px; }
+            .linha { grid-template-columns: 1fr; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+<div class="topo"><a href="/">⌂ Home</a></div>
+<div class="container">
+    <h1>Cadastro de paciente</h1>
+    <p class="descricao">Cadastro dos dados que serão utilizados no recurso BRIndividuo / Patient.</p>
+
+    {% if mensagem %}
+        <div class="mensagem-geral sucesso">{{ mensagem }}</div>
+    {% endif %}
+    {% if erro %}
+        <div class="mensagem-geral erro">{{ erro }}</div>
+    {% endif %}
+
+    <form method="POST" id="formPaciente" novalidate>
+        <div class="campo">
+            <label for="nome">BRIndividuo (Nome completo)</label>
+            <input type="text" id="nome" name="nome" maxlength="120"
+                   placeholder="Ex.: Maria da Silva" value="{{ dados.nome }}"
+                   autocomplete="name">
+            <span class="ajuda">Nome oficial do paciente. No recurso FHIR, o nome será tratado como nome oficial.</span>
+        </div>
+
+        <div class="linha">
+            <div class="campo">
+                <label for="cpf">BRDocumentoIndividuo (CPF)</label>
+                <input type="text" id="cpf" name="cpf" maxlength="14"
+                       inputmode="numeric" placeholder="000.000.000-00"
+                       value="{{ dados.cpf }}" autocomplete="off">
+                <span id="cpfMensagem" class="mensagem-campo"></span>
+                <span class="ajuda">CPF do paciente. O formulário valida formato e dígitos verificadores.</span>
+            </div>
+
+            <div class="campo">
+                <label for="cns">BRDocumentoIndividuo (CNS)</label>
+                <input type="text" id="cns" name="cns" maxlength="15"
+                       inputmode="numeric" placeholder="000000000000000"
+                       value="{{ dados.cns }}" autocomplete="off">
+                <span id="cnsMensagem" class="mensagem-campo"></span>
+                <span class="ajuda">Cartão Nacional de Saúde. Neste protótipo, o campo é opcional e aceita 15 dígitos.</span>
+            </div>
+        </div>
+
+        <div class="linha">
+            <div class="campo">
+                <label for="genero">Patient.gender (Gênero)</label>
+                <select id="genero" name="genero">
+                    <option value="">Selecione</option>
+                    <option value="male" {% if dados.genero == "male" %}selected{% endif %}>Masculino</option>
+                    <option value="female" {% if dados.genero == "female" %}selected{% endif %}>Feminino</option>
+                    <option value="other" {% if dados.genero == "other" %}selected{% endif %}>Outro</option>
+                    <option value="unknown" {% if dados.genero == "unknown" %}selected{% endif %}>Desconhecido</option>
+                </select>
+                <span class="ajuda">Na tela aparece traduzido; o formulário envia os códigos FHIR male, female, other ou unknown.</span>
+            </div>
+
+            <div class="campo">
+                <label for="data_nascimento">Patient.birthDate (Data de nascimento)</label>
+                <input type="date" id="data_nascimento" name="data_nascimento"
+                       value="{{ dados.data_nascimento }}">
+                <span id="nascimentoMensagem" class="mensagem-campo"></span>
+                <span class="ajuda">Data de nascimento do paciente.</span>
+            </div>
+        </div>
+
+        <button type="submit" id="botaoCadastrar" disabled>Cadastrar paciente</button>
+    </form>
+</div>
+
+<script>
+    const form = document.getElementById("formPaciente");
+    const nome = document.getElementById("nome");
+    const cpf = document.getElementById("cpf");
+    const cns = document.getElementById("cns");
+    const genero = document.getElementById("genero");
+    const nascimento = document.getElementById("data_nascimento");
+    const botao = document.getElementById("botaoCadastrar");
+    const cpfMensagem = document.getElementById("cpfMensagem");
+    const cnsMensagem = document.getElementById("cnsMensagem");
+    const nascimentoMensagem = document.getElementById("nascimentoMensagem");
+
+    function formatarCPF(valor) {
+        let numero = valor.replace(/\D/g, "").substring(0, 11);
+        if (numero.length > 9) return numero.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, "$1.$2.$3-$4");
+        if (numero.length > 6) return numero.replace(/(\d{3})(\d{3})(\d{1,3})/, "$1.$2.$3");
+        if (numero.length > 3) return numero.replace(/(\d{3})(\d{1,3})/, "$1.$2");
+        return numero;
+    }
+
+    function validarCPF(valor) {
+        const numero = valor.replace(/\D/g, "");
+        if (numero.length !== 11 || /^(\d)\1{10}$/.test(numero)) return false;
+        let soma = 0;
+        for (let i=0; i<9; i++) soma += parseInt(numero[i]) * (10-i);
+        let digito = (soma * 10) % 11;
+        if (digito === 10) digito = 0;
+        if (digito !== parseInt(numero[9])) return false;
+        soma = 0;
+        for (let i=0; i<10; i++) soma += parseInt(numero[i]) * (11-i);
+        digito = (soma * 10) % 11;
+        if (digito === 10) digito = 0;
+        return digito === parseInt(numero[10]);
+    }
+
+    function marcar(campo, mensagem, valido, texto) {
+        campo.classList.remove("valido", "invalido");
+        campo.classList.add(valido ? "valido" : "invalido");
+        mensagem.className = "mensagem-campo " + (valido ? "sucesso" : "erro");
+        mensagem.textContent = texto;
+    }
+
+    function limparMensagem(campo, mensagem) {
+        campo.classList.remove("valido", "invalido");
+        mensagem.className = "mensagem-campo";
+        mensagem.textContent = "";
+    }
+
+    function validarNascimento() {
+        const hoje = new Date().toISOString().split("T")[0];
+        nascimento.max = hoje;
+        if (!nascimento.value) {
+            limparMensagem(nascimento, nascimentoMensagem);
+            return false;
+        }
+        if (nascimento.value > hoje) {
+            marcar(nascimento, nascimentoMensagem, false, "A data de nascimento não pode ser futura.");
+            return false;
+        }
+        marcar(nascimento, nascimentoMensagem, true, "Data válida.");
+        return true;
+    }
+
+    function validarFormulario() {
+        const cpfValido = validarCPF(cpf.value);
+        const cnsNumero = cns.value.replace(/\D/g, "");
+        const cnsValido = cnsNumero.length === 0 || cnsNumero.length === 15;
+
+        const valido =
+            nome.value.trim().length >= 3 &&
+            cpfValido &&
+            cnsValido &&
+            genero.value !== "" &&
+            validarNascimento();
+
+        botao.disabled = !valido;
+        return valido;
+    }
+
+    cpf.addEventListener("input", function () {
+        cpf.value = formatarCPF(cpf.value);
+        if (!cpf.value) {
+            limparMensagem(cpf, cpfMensagem);
+        } else if (validarCPF(cpf.value)) {
+            marcar(cpf, cpfMensagem, true, "CPF válido.");
+        } else {
+            marcar(cpf, cpfMensagem, false, "CPF inválido.");
+        }
+        validarFormulario();
+    });
+
+    cns.addEventListener("input", function () {
+        cns.value = cns.value.replace(/\D/g, "").substring(0, 15);
+        if (!cns.value) {
+            limparMensagem(cns, cnsMensagem);
+        } else if (cns.value.length === 15) {
+            marcar(cns, cnsMensagem, true, "CNS com formato válido.");
+        } else {
+            marcar(cns, cnsMensagem, false, "O CNS deve possuir 15 dígitos.");
+        }
+        validarFormulario();
+    });
+
+    nascimento.addEventListener("change", validarFormulario);
+    nascimento.addEventListener("input", validarFormulario);
+    [nome, genero].forEach(function (campo) {
+        campo.addEventListener("input", validarFormulario);
+        campo.addEventListener("change", validarFormulario);
+    });
+
+    form.addEventListener("submit", function (event) {
+        if (!validarFormulario()) {
+            event.preventDefault();
+            return;
+        }
+        botao.disabled = true;
+        botao.textContent = "Cadastrando...";
+    });
+
+    window.addEventListener("DOMContentLoaded", function () {
+        if (cpf.value) cpf.dispatchEvent(new Event("input"));
+        if (cns.value) cns.dispatchEvent(new Event("input"));
+        validarFormulario();
+    });
+</script>
+</body>
+</html>

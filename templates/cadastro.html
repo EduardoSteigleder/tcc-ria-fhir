@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Vacinação</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            color: #222;
+        }
+
+        .topo-navegacao {
+            max-width: 650px;
+            margin: 24px auto 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .topo-navegacao a {
+            text-decoration: none;
+            color: #222;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 9px 12px;
+            border: 1px solid #d0d5da;
+            border-radius: 6px;
+            background: white;
+        }
+
+        .topo-navegacao a:hover {
+            background: #f0f2f4;
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 40px auto;
+            background: white;
+            padding: 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        h1 { margin: 0 0 8px; }
+
+        .descricao {
+            color: #555;
+            margin: 0 0 28px;
+        }
+
+        .campo { margin-bottom: 24px; }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #bbb;
+            border-radius: 5px;
+            font-size: 15px;
+            background: white;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #555;
+        }
+
+        .lista-terminologia {
+            height: 42px;
+            min-height: 42px;
+            max-height: 42px;
+            padding: 10px 11px;
+        }
+
+        .lista-terminologia option {
+            padding: 4px 8px;
+        }
+
+        .campo-referencia {
+            display: flex;
+            width: 100%;
+        }
+
+        .prefixo-referencia {
+            display: flex;
+            align-items: center;
+            padding: 0 11px;
+            border: 1px solid #bbb;
+            border-right: 0;
+            border-radius: 5px 0 0 5px;
+            background: #f0f2f4;
+            font-size: 15px;
+            white-space: nowrap;
+        }
+
+        .campo-referencia input {
+            border-radius: 0 5px 5px 0;
+        }
+
+        .ajuda {
+            display: block;
+            color: #777;
+            font-size: 13px;
+            line-height: 1.4;
+            margin-top: 6px;
+        }
+
+        .mensagem-campo {
+            display: none;
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .mensagem-campo.erro-campo {
+            display: block;
+            color: #dc3545;
+        }
+
+        .mensagem-campo.sucesso-campo {
+            display: block;
+            color: #198754;
+        }
+
+        input.valido,
+        select.valido {
+            border-color: #198754;
+            background-color: #f5fff7;
+        }
+
+        input.invalido,
+        select.invalido {
+            border-color: #dc3545;
+            background-color: #fff8f8;
+        }
+
+        .mensagem-geral {
+            padding: 13px;
+            border-radius: 5px;
+            margin-bottom: 22px;
+            line-height: 1.5;
+        }
+
+        .mensagem-geral.sucesso {
+            background: #e8f5e9;
+            border: 1px solid #a5d6a7;
+        }
+
+        .mensagem-geral.erro {
+            background: #ffebee;
+            border: 1px solid #ef9a9a;
+            color: #a61b29;
+        }
+
+        .secao {
+            margin: 30px 0 18px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ddd;
+            font-size: 18px;
+        }
+
+        button {
+            width: 100%;
+            border: 0;
+            border-radius: 5px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #222;
+            color: white;
+        }
+
+        button:hover:not(:disabled) { background: #000; }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.35;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                margin: 0;
+                min-height: 100vh;
+                border-radius: 0;
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="topo-navegacao">
+    <a href="/">⌂ Home</a>
+</div>
+
+<div class="container">
+    <h1>Registrar vacinação</h1>
+
+    <p class="descricao">
+        Registro de imunobiológico utilizando HL7 FHIR e o modelo RIA.
+    </p>
+
+    {% if mensagem %}
+        <div class="mensagem-geral sucesso">{{ mensagem }}</div>
+    {% endif %}
+
+    {% if erro %}
+        <div class="mensagem-geral erro">{{ erro }}</div>
+    {% endif %}
+
+    <form method="POST" id="formCadastro" novalidate>
+
+        <div class="secao">Identificação do registro</div>
+
+        <div class="campo">
+            <label for="patient_id">Paciente</label>
+            <select id="patient_id" name="patient_id" required>
+                <option value="">Selecione o paciente</option>
+                {% for paciente in pacientes_cadastrados %}
+                    <option value="{{ paciente.id }}" {% if dados.patient_id == paciente.id %}selected{% endif %}>
+                        {{ paciente.nome }} — Patient/{{ paciente.id }}
+                    </option>
+                {% endfor %}
+            </select>
+            <span id="patientMensagem" class="mensagem-campo"></span>
+            <span class="ajuda">Selecione um paciente previamente cadastrado.</span>
+        </div>
+
+        <div class="campo">
+            <label for="practitioner_id">Profissional de saúde</label>
+            <select id="practitioner_id" name="practitioner_id" required>
+                <option value="">Selecione o profissional</option>
+                {% for profissional in profissionais_cadastrados %}
+                    <option value="{{ profissional.id }}" {% if dados.practitioner_id == profissional.id %}selected{% endif %}>
+                        {{ profissional.nome }} — Practitioner/{{ profissional.id }}
+                    </option>
+                {% endfor %}
+            </select>
+            <span id="practitionerMensagem" class="mensagem-campo"></span>
+            <span class="ajuda">Selecione um profissional previamente cadastrado.</span>
+        </div>
+
+        <div class="campo">
+            <label for="cnes" title="Estabelecimento de saúde responsável pela autoria do registro.">
+                BREstabelecimentoSaude (CNES do estabelecimento)
+            </label>
+            <input
+                type="text"
+                id="cnes"
+                name="cnes"
+                maxlength="7"
+                inputmode="numeric"
+                placeholder="Ex.: 2237601"
+                value="{{ dados.cnes }}"
+                autocomplete="off"
+                required
+            >
+            <span id="cnesMensagem" class="mensagem-campo"></span>
+            <span class="ajuda">
+                Informe o CNES de 7 dígitos do estabelecimento responsável pelo registro.
+            </span>
+        </div>
+
+        <div class="secao">Dados do Immunization</div>
+
+        <div class="campo">
+            <label for="imunobiologico" title="Código nacional do imunobiológico administrado.">
+                BRImunobiologico (Imunobiológico administrado)
+            </label>
+            <select
+                id="imunobiologico"
+                name="imunobiologico"
+                class="lista-terminologia"
+                required
+            >
+                {% for codigo, descricao in terminologias.imunobiologico.items() %}
+                    <option
+                        value="{{ codigo }}"
+                        {% if dados.imunobiologico == codigo %}selected{% endif %}
+                    >{{ codigo }} - {{ descricao }}</option>
+                {% endfor %}
+            </select>
+            <span class="ajuda">
+                Selecione o imunobiológico. O formulário envia somente o código selecionado.
+            </span>
+        </div>
+
+        <div class="campo">
+            <label for="data_vacinacao" title="Data em que o imunobiológico foi administrado.">
+                occurrenceDateTime (Data da vacinação)
+            </label>
+            <input
+                type="date"
+                id="data_vacinacao"
+                name="data_vacinacao"
+                value="{{ dados.data_vacinacao }}"
+                required
+            >
+            <span id="dataMensagem" class="mensagem-campo"></span>
+            <span class="ajuda">
+                Data da administração do imunobiológico. Não pode ser futura.
+            </span>
+        </div>
+
+        <div class="campo">
+            <label for="lote" title="Número ou identificação do lote do imunobiológico.">
+                lotNumber (Lote do imunobiológico)
+            </label>
+            <input
+                type="text"
+                id="lote"
+                name="lote"
+                maxlength="50"
+                placeholder="Ex.: LOTE-TCC-001"
+                value="{{ dados.lote }}"
+                autocomplete="off"
+                required
+            >
+            <span id="loteMensagem" class="mensagem-campo"></span>
+            <span class="ajuda">
+                Identificação do lote da vacina administrada.
+            </span>
+        </div>
+
+        <div class="campo">
+            <label for="dose" title="Dose da série vacinal informada no protocolo aplicado.">
+                BRDose (Dose)
+            </label>
+            <select id="dose" name="dose" required>
+                <option value="">Selecione</option>
+                {% for codigo, descricao in doses.items() %}
+                    <option
+                        value="{{ codigo }}"
+                        {% if dados.dose == codigo %}selected{% endif %}
+                    >{{ codigo }} - {{ descricao }}</option>
+                {% endfor %}
+            </select>
+            <span id="doseMensagem" class="mensagem-campo"></span>
+            <span class="ajuda">
+                Selecione a dose correspondente à aplicação.
+            </span>
+        </div>
+
+        <div class="campo">
+            <label for="grupo_atendimento" title="Grupo populacional ao qual a pessoa pertence no contexto da vacinação.">
+                BRGrupoAtendimento (Grupo de atendimento)
+            </label>
+            <select
+                id="grupo_atendimento"
+                name="grupo_atendimento"
+                class="lista-terminologia"
+                required
+            >
+                {% for codigo, descricao in terminologias.grupo_atendimento.items() %}
+                    <option
+                        value="{{ codigo }}"
+                        {% if dados.grupo_atendimento == codigo %}selected{% endif %}
+                    >{{ codigo }} - {{ descricao }}</option>
+                {% endfor %}
+            </select>
+            <span class="ajuda">
+                Grupo de atendimento utilizado no registro da vacinação.
+            </span>
+        </div>
+
+        <div class="campo">
+            <label for="condicao_maternal" title="Condição maternal da pessoa vacinada quando aplicável.">
+                BRCondicaoMaternal (Condição maternal)
+            </label>
+            <select
+                id="condicao_maternal"
+                name="condicao_maternal"
+                class="lista-terminologia"
+                required
+            >
+                {% for codigo, descricao in terminologias.condicao_maternal.items() %}
+                    <option
+                        value="{{ codigo }}"
+                        {% if dados.condicao_maternal == codigo %}selected{% endif %}
+                    >{{ codigo }} - {{ descricao }}</option>
+                {% endfor %}
+            </select>
+            <span class="ajuda">
+                Informe a condição maternal prevista pela terminologia; use “Não se aplica” quando for o caso.
+            </span>
+        </div>
+
+        <div class="campo">
+            <label for="fabricante_pni" title="Fabricante do imunobiológico conforme a terminologia do PNI.">
+                BRFabricantePNI (Fabricante)
+            </label>
+            <select
+                id="fabricante_pni"
+                name="fabricante_pni"
+                class="lista-terminologia"
+                required
+            >
+                {% for codigo, descricao in terminologias.fabricante_pni.items() %}
+                    <option
+                        value="{{ codigo }}"
+                        {% if dados.fabricante_pni == codigo %}selected{% endif %}
+                    >{{ codigo }} - {{ descricao }}</option>
+                {% endfor %}
+            </select>
+            <span class="ajuda">
+                Fabricante do imunobiológico administrado.
+            </span>
+        </div>
+
+        <div class="campo">
+            <label for="local_aplicacao" title="Local anatômico onde o imunobiológico foi aplicado.">
+                BRLocalAplicacao (Local de aplicação)
+            </label>
+            <select
+                id="local_aplicacao"
+                name="local_aplicacao"
+                class="lista-terminologia"
+                required
+            >
+                {% for codigo, descricao in terminologias.local_aplicacao.items() %}
+                    <option
+                        value="{{ codigo }}"
+                        {% if dados.local_aplicacao == codigo %}selected{% endif %}
+                    >{{ codigo }} - {{ descricao }}</option>
+                {% endfor %}
+            </select>
+            <span class="ajuda">
+                Local anatômico da aplicação, conforme BRLocalAplicacao.
+            </span>
+        </div>
+
+        <div class="campo">
+            <label for="via_administracao" title="Via utilizada para administrar o imunobiológico.">
+                BRViaAdministracao (Via de administração)
+            </label>
+            <select
+                id="via_administracao"
+                name="via_administracao"
+                class="lista-terminologia"
+                required
+            >
+                {% for codigo, descricao in terminologias.via_administracao.items() %}
+                    <option
+                        value="{{ codigo }}"
+                        {% if dados.via_administracao == codigo %}selected{% endif %}
+                    >{{ codigo }} - {{ descricao }}</option>
+                {% endfor %}
+            </select>
+            <span class="ajuda">
+                Forma de administração utilizada na aplicação, como intramuscular, oral, nasal etc.
+            </span>
+        </div>
+
+        <div class="campo">
+            <label for="estrategia_vacinacao" title="Estratégia de vacinação associada ao evento registrado.">
+                BREstrategiaVacinacao (Estratégia de vacinação)
+            </label>
+            <select
+                id="estrategia_vacinacao"
+                name="estrategia_vacinacao"
+                class="lista-terminologia"
+                required
+            >
+                {% for codigo, descricao in terminologias.estrategia_vacinacao.items() %}
+                    <option
+                        value="{{ codigo }}"
+                        {% if dados.estrategia_vacinacao == codigo %}selected{% endif %}
+                    >{{ codigo }} - {{ descricao }}</option>
+                {% endfor %}
+            </select>
+            <span class="ajuda">
+                Estratégia utilizada no atendimento, conforme BREstrategiaVacinacao.
+            </span>
+        </div>
+
+        <div class="secao">Dados do Condition</div>
+
+        <div class="campo">
+            <label for="cid10" title="Condição clínica avaliada associada ao motivo da imunização.">
+                BRCID10 (CID-10 avaliado)
+            </label>
+            <select
+                id="cid10"
+                name="cid10"
+                class="lista-terminologia"
+                required
+            >
+                {% for codigo, descricao in terminologias.cid10.items() %}
+                    <option
+                        value="{{ codigo }}"
+                        {% if dados.cid10 == codigo %}selected{% endif %}
+                    >{{ codigo }} - {{ descricao }}</option>
+                {% endfor %}
+            </select>
+            <span class="ajuda">
+                Selecione o diagnóstico/condição conforme a terminologia BRCID10.
+            </span>
+        </div>
+
+        <button type="submit" id="botaoCadastrar" disabled>
+            Cadastrar vacinação
+        </button>
+    </form>
+</div>
+
+<script>
+    const form = document.getElementById("formCadastro");
+    const botao = document.getElementById("botaoCadastrar");
+    const patientId = document.getElementById("patient_id");
+    const practitionerId = document.getElementById("practitioner_id");
+    const cnes = document.getElementById("cnes");
+    const dataVacinacao = document.getElementById("data_vacinacao");
+    const lote = document.getElementById("lote");
+
+    const camposObrigatorios = [
+        "imunobiologico",
+        "data_vacinacao",
+        "lote",
+        "dose",
+        "grupo_atendimento",
+        "cnes",
+        "condicao_maternal",
+        "fabricante_pni",
+        "local_aplicacao",
+        "via_administracao",
+        "estrategia_vacinacao",
+        "cid10"
+    ];
+
+    function marcar(campo, valido, mensagem, textoValido, textoInvalido) {
+        campo.classList.toggle("valido", valido);
+        campo.classList.toggle("invalido", !valido && campo.value !== "");
+        if (!mensagem) return;
+        if (!campo.value) { mensagem.className = "mensagem-campo"; mensagem.textContent = ""; return; }
+        mensagem.className = valido ? "mensagem-campo sucesso-campo" : "mensagem-campo erro-campo";
+        mensagem.textContent = valido ? textoValido : textoInvalido;
+    }
+
+    function validarCodigoFHIR(valor) {
+        return /^\d+$/.test(valor.trim());
+    }
+
+    function formularioValido() {
+        if (!validarCodigoFHIR(patientId.value)) return false;
+        if (!validarCodigoFHIR(practitionerId.value)) return false;
+        if (cnes.value.replace(/\D/g, "").length !== 7) return false;
+        if (!dataVacinacao.value) return false;
+        if (dataVacinacao.value > new Date().toISOString().split("T")[0]) return false;
+        if (!lote.value.trim()) return false;
+
+        return camposObrigatorios.every(id => {
+            const campo = document.getElementById(id);
+            return campo && campo.value !== "";
+        });
+    }
+
+    function atualizarBotao() {
+        botao.disabled = !formularioValido();
+    }
+
+    patientId.addEventListener("change", () => {
+        marcar(patientId, validarCodigoFHIR(patientId.value), document.getElementById("patientMensagem"), "Paciente selecionado.", "Selecione um paciente.");
+        atualizarBotao();
+    });
+
+    practitionerId.addEventListener("change", () => {
+        marcar(practitionerId, validarCodigoFHIR(practitionerId.value), document.getElementById("practitionerMensagem"), "Profissional selecionado.", "Selecione um profissional.");
+        atualizarBotao();
+    });
+
+    cnes.addEventListener("input", () => {
+        cnes.value = cnes.value.replace(/\D/g, "").substring(0, 7);
+        marcar(cnes, cnes.value.length === 7, document.getElementById("cnesMensagem"), "CNES com formato válido.", "O CNES deve possuir 7 dígitos.");
+        atualizarBotao();
+    });
+
+    dataVacinacao.max = new Date().toISOString().split("T")[0];
+
+    form.querySelectorAll("input, select").forEach(campo => {
+        campo.addEventListener("input", atualizarBotao);
+        campo.addEventListener("change", atualizarBotao);
+    });
+
+    form.addEventListener("submit", event => {
+        if (!formularioValido()) {
+            event.preventDefault();
+            atualizarBotao();
+            return;
+        }
+
+        botao.disabled = true;
+        botao.textContent = "Cadastrando...";
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+        if (patientId.value) marcar(patientId, validarCodigoFHIR(patientId.value), document.getElementById("patientMensagem"), "Paciente selecionado.", "Selecione um paciente.");
+        if (practitionerId.value) marcar(practitionerId, validarCodigoFHIR(practitionerId.value), document.getElementById("practitionerMensagem"), "Profissional selecionado.", "Selecione um profissional.");
+        if (cnes.value) marcar(cnes, cnes.value.replace(/\D/g, "").length === 7, document.getElementById("cnesMensagem"), "CNES com formato válido.", "O CNES deve possuir 7 dígitos.");
+        atualizarBotao();
+    });
+</script>
+</body>
+</html>
