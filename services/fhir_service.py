@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 import requests
+from uuid import uuid4
 
 HAPI_BASE_URL = os.getenv("FHIR_BASE_URL", "https://hapi.fhir.org/baseR4").rstrip("/")
 HEADERS = {"Accept": "application/fhir+json", "Content-Type": "application/fhir+json"}
@@ -109,14 +110,14 @@ def _immunization(*, patient_id, practitioner_id, imunobiologico, data_vacinacao
         }]
     }
 
-def _composition(patient_id, cnes, immunization_id):
+def _composition(cpf, cnes, immunization_id):
     agora = datetime.now().astimezone().isoformat(timespec="seconds")
     return {
         "resourceType": "Composition",
         "meta": {"profile": ["http://www.saude.gov.br/fhir/r4/StructureDefinition/BRRegistroImunobiologicoAdministradoRotina-2.0"]},
         "status": "final",
         "type": {"coding": [{"system": "http://www.saude.gov.br/fhir/r4/CodeSystem/BRTipoDocumento", "code": "RIA"}]},
-        "subject": {"reference": f"Patient/{patient_id}"},
+        "subject": {"identifier": {"system": "http://www.saude.gov.br/fhir/r4/StructureDefinition/BRIndividuo-1.0", "value": cpf}},
         "date": agora,
         "author": [{"identifier": {"system": "http://www.saude.gov.br/fhir/r4/StructureDefinition/BREstabelecimentoSaude-1.0", "value": cnes}}],
         "title": "Registro de Imunobiologico Administrado na Rotina",
@@ -150,11 +151,12 @@ def cadastrar_vacinacao(*, patient_id, practitioner_id, imunobiologico, descrica
     )
     immunization = _post("Immunization", immunization_enviado)
 
-    composition_enviado = _composition(patient_id, cnes, immunization["id"])
+    composition_enviado = _composition(cpf, cnes, immunization["id"])
     composition = _post("Composition", composition_enviado)
 
     bundle_enviado = {
         "resourceType": "Bundle",
+        "identifier": {"system": "urn:ietf:rfc:3986", "value": f"urn:uuid:{uuid4()}"},
         "type": "document",
         "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
         "entry": [
